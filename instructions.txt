@@ -1,0 +1,33 @@
+
+POST /fetch-channel-videos
+Fetches videos from a hardcoded list of YouTube channel URLs.
+Saves all video URLs into the videos table, regardless of whether they already exist.
+Use this to initially populate the database.
+Example response:
+{
+    "status": "success",
+    "channels_processed": 2,
+    "videos_added": 4395
+}
+
+---------------------------------
+POST /scan-new-channel-videos
+Checks the same YouTube channels and inserts only new videos (i.e., not already in the videos table).
+Use this to update the database regularly without duplicating entries.
+Example response:
+{
+    "status": "success",
+    "new_videos": 9
+}
+
+---------------------------------
+POST /generate-tweets
+Generates a tweet from the transcript of a video. Only generates a tweet if the first row in the 'videos' table
+has status 'pending'. If the first row is already pending, it won’t generate another tweet. Waits until
+the current pending video is published before generating the next one.
+
+---------------------------------
+POST /post-to-x
+Posts the first video that has status 'pending' and a non-empty tweet_text field.
+Skips any videos with status 'published' or with an empty tweet_text.
+If no such video is found, nothing is posted.
