@@ -1,5 +1,7 @@
 # main.py
 import os
+import asyncio
+import httpx
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import uvicorn
@@ -18,6 +20,7 @@ load_dotenv()
 # Config
 SYSTEM_AUTH_TOKEN = os.getenv("SYSTEM_AUTH_TOKEN")
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+PORT = int(os.getenv("PORT", 8006))
 
 # Setup
 logging.basicConfig(level=logging.INFO)
@@ -151,6 +154,55 @@ async def post_to_x(credentials=Depends(authenticate)):
     return {"status": "success", "posted": posted}
 
 
+async def newYoutubeVideoToXpost():
+    """
+    Performs the complete workflow: fetch videos, scan new videos, generate tweets, and post to X.
+    Each step has a 180-second timeout and continues even if individual steps fail.
+    """
+    base_url = f"http://127.0.0.1:{PORT}"
+    timeout = httpx.Timeout(180.0)
+    
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        steps = [
+            ("scan-new-channel-videos", f"{base_url}/scan-new-channel-videos"),
+            ("generate-tweets", f"{base_url}/generate-tweets"),
+            ("post-to-x", f"{base_url}/post-to-x")
+        ]
+        
+        results = {}
+        
+        for step_name, url in steps:
+            try:
+                response = await client.post(url, headers={"Authorization": f"Bearer {SYSTEM_AUTH_TOKEN}"})
+                response.raise_for_status()
+                data = response.json()
+                
+                if data.get("status") == "success":
+                    results[step_name] = {"status": "success", "data": data}
+                else:
+                    results[step_name] = {"status": "failed", "error": f"Step returned non-success status: {data.get('status')}"}
+                    logger.error(f"Step {step_name} failed: {data.get('status')}")
+                    
+            except Exception as e:
+                results[step_name] = {"status": "failed", "error": str(e)}
+                logger.error(f"Step {step_name} failed: {str(e)}")
+        
+        return {
+            "status": "completed",
+            "steps": results,
+            "message": "Process complete"
+        }
+
+
+@app.post("/new-youtube-video-to-x-post")
+async def new_youtube_video_to_x_post():
+    """
+    Execute the complete workflow from fetching videos to posting to X.
+    No authentication required - open for curl execution.
+    """
+    return await newYoutubeVideoToXpost()
+
+
 @app.get("/status")
 async def get_status(credentials=Depends(authenticate)):
     return {"status": "healthy", "message": "Service running"}
@@ -162,4 +214,4 @@ async def get_home():
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8006, reload=False)
+    uvicorn.run("main:app", host="127.0.0.1", port=PORT, reload=False)

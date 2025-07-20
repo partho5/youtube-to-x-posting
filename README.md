@@ -116,6 +116,66 @@ Returns application health status and basic statistics.
 ### `/`
 Returns a simple status message for the root endpoint.
 
+## One-Stop Service
+
+### `POST /new-youtube-video-to-x-post`
+**Purpose:** Executes the complete workflow in a single call - fetches videos, scans for new ones, generates tweets, and posts to X. This is the recommended endpoint for automated execution as it handles the entire pipeline.
+
+**Features:**
+- No authentication required (open for curl execution)
+- 180-second timeout per step
+- Continues execution even if individual steps fail
+- Logs only failures for cleaner output
+- Returns detailed status for each step
+
+**Example response:**
+```json
+{
+  "status": "completed",
+  "steps": {
+    "fetch-channel-videos": {
+      "status": "success",
+      "data": {
+        "status": "success",
+        "channels_processed": 1,
+        "videos_added": 0
+      }
+    },
+    "scan-new-channel-videos": {
+      "status": "success",
+      "data": {
+        "status": "success",
+        "new_videos": 3
+      }
+    },
+    "generate-tweets": {
+      "status": "success",
+      "data": {
+        "status": "success",
+        "processed": 1,
+        "video_id": 42
+      }
+    },
+    "post-to-x": {
+      "status": "success",
+      "data": {
+        "status": "success",
+        "posted": 1
+      }
+    }
+  },
+  "message": "Process complete"
+}
+```
+
+**Usage:**
+```bash
+# Execute complete workflow
+curl -X POST "http://localhost:8006/new-youtube-video-to-x-post"
+```
+
+**Perfect for automation:** This endpoint can be called from cron jobs or other automation tools to run the entire pipeline with a single command.
+
 ## Database Schema
 
 ### `channels` Table
