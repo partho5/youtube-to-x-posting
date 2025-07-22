@@ -54,9 +54,9 @@ fetches channel video URLs and saves to database
 @app.post("/fetch-channel-videos")
 async def add_channel_videos(credentials=Depends(authenticate)):
     channel_list = [
-        # {"x_handle": "relationship", "channel_url": "https://www.youtube.com/@CaseyZander"},
+        {"x_handle": "relationship", "channel_url": "https://www.youtube.com/@CaseyZander"},
         # {"x_handle": "ai_videos", "channel_url": "https://www.youtube.com/@biz-tech"},
-        {"x_handle": "idea", "channel_url": "https://www.youtube.com/@davejeltema3"},
+        # {"x_handle": "idea", "channel_url": "https://www.youtube.com/@davejeltema3"},
     ]
 
     total_videos = 0
